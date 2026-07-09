@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.env
+.env.local
+supabase/.temp/
+ios/
+android/
+.DS_Store
+
+# Local geodata inputs (preprocessed into src/data/lux/*.json)
+/data/
