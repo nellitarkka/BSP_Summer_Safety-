@@ -3,24 +3,24 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { gradients, colors, radius, space, fontSize, weight } from '@/lib/theme';
+import { gradients, colors, radius, space, fontSize, font } from '@/lib/theme';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   return (
-    <LinearGradient colors={gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
+    <LinearGradient colors={gradients.night} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
       <SafeAreaView style={styles.safe}>
         <View style={styles.container}>
-          {/* Brand mark + tagline */}
+          {/* Brand mark + name */}
           <View style={styles.header}>
             <View style={styles.logo}>
-              <Ionicons name="shield-checkmark" size={44} color={colors.white} />
+              <Ionicons name="moon" size={40} color={colors.white} />
             </View>
-            <Text style={styles.title}>
-              Safety{'\n'}Companion
-            </Text>
-            <Text style={styles.tagline}>
-              Plan safer journeys, check in with people you trust, and get calm support when you need it.
+            <Text style={styles.wordmark}>Safety{'\n'}Companion</Text>
+            <Text style={styles.tagline}>Get home safe. Take your time.</Text>
+            <Text style={styles.blurb}>
+              Someone quietly keeping you company until you&rsquo;re safely inside — attentive,
+              unhurried, and never dramatic.
             </Text>
           </View>
 
@@ -42,7 +42,7 @@ export default function WelcomeScreen() {
             </Pressable>
 
             <Text style={styles.disclaimer}>
-              This app supports personal safety planning. It does not replace emergency services.
+              Safety Companion supports personal safety planning. It supports 112 — it never replaces it.
             </Text>
           </View>
         </View>
@@ -59,27 +59,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: space[6],
     paddingVertical: space[8],
   },
-  header: { marginTop: 64, alignItems: 'flex-start' },
+  header: { marginTop: 56, alignItems: 'flex-start' },
   logo: {
-    height: 80,
-    width: 80,
+    height: 76,
+    width: 76,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius['4xl'],
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: radius['3xl'],
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
-  title: {
+  wordmark: {
     marginTop: space[6],
-    fontSize: fontSize['4xl'],
-    fontWeight: weight.extrabold,
-    letterSpacing: -0.5,
-    color: '#FFFFFF',
+    fontSize: fontSize.display,
+    fontFamily: font.display,
+    letterSpacing: 0.5,
+    color: colors.white,
   },
   tagline: {
-    marginTop: space[3],
-    fontSize: fontSize.lg,
-    lineHeight: 28,
-    color: 'rgba(255,255,255,0.8)',
+    marginTop: space[1],
+    fontSize: fontSize.xl,
+    fontFamily: font.displayItalic,
+    color: '#DDD2EC',
+  },
+  blurb: {
+    marginTop: space[4],
+    fontSize: fontSize.base,
+    fontFamily: font.regular,
+    lineHeight: 26,
+    color: 'rgba(255,255,255,0.72)',
   },
   actions: { gap: space[3] },
   primaryBtn: {
@@ -90,26 +97,27 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     textAlign: 'center',
     fontSize: fontSize.lg,
-    fontWeight: weight.bold,
-    color: colors.brand,
+    fontFamily: font.bold,
+    color: colors.brandDark,
   },
   secondaryBtn: {
     borderRadius: radius['2xl'],
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.35)',
     paddingVertical: space[4],
   },
   secondaryBtnText: {
     textAlign: 'center',
     fontSize: fontSize.lg,
-    fontWeight: weight.bold,
-    color: '#FFFFFF',
+    fontFamily: font.bold,
+    color: colors.white,
   },
   disclaimer: {
     marginTop: space[4],
     textAlign: 'center',
     fontSize: fontSize.xs,
+    fontFamily: font.regular,
     lineHeight: 20,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.68)',
   },
 });

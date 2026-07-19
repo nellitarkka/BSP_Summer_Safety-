@@ -9,7 +9,7 @@ import { FormField } from '@/components/FormField';
 import { SafetyButton } from '@/components/SafetyButton';
 import { resetSchema } from '@/lib/validation';
 import { authService } from '@/services/authService';
-import { colors, space, weight } from '@/lib/theme';
+import { colors, space, font } from '@/lib/theme';
 
 export default function ResetScreen() {
   const router = useRouter();
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   content: { justifyContent: 'center' },
   card: { gap: space[4] },
   sentCard: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  sentText: { flex: 1, color: colors.text },
+  sentText: { flex: 1, fontFamily: font.regular, color: colors.text },
   link: { paddingVertical: space[1] },
-  linkText: { textAlign: 'center', fontWeight: weight.semibold, color: colors.brand },
+  linkText: { textAlign: 'center', fontFamily: font.semibold, color: colors.brand },
 });

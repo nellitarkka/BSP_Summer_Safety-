@@ -1,6 +1,6 @@
 import { Pressable, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, space, fontSize, weight } from '@/lib/theme';
+import { colors, radius, space, fontSize, font } from '@/lib/theme';
 
 interface ChipProps {
   label: string;
@@ -43,5 +43,5 @@ const styles = StyleSheet.create({
   },
   selected: { backgroundColor: colors.brand },
   unselected: { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
-  label: { fontWeight: weight.semibold, fontSize: fontSize.base },
+  label: { fontFamily: font.semibold, fontSize: fontSize.sm },
 });

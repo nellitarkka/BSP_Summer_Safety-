@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, space, fontSize, weight } from '@/lib/theme';
+import { colors, radius, space, fontSize, font } from '@/lib/theme';
 
 interface FormFieldProps extends TextInputProps {
   label: string;
@@ -48,7 +48,7 @@ export function FormField({ label, error, hint, icon, ...inputProps }: FormField
 
 const styles = StyleSheet.create({
   wrap: { gap: space[1] + 2 },
-  label: { fontSize: fontSize.sm, fontWeight: weight.semibold, color: colors.text },
+  label: { fontSize: fontSize.sm, fontFamily: font.semibold, color: colors.text },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     paddingHorizontal: space[4],
   },
-  input: { flex: 1, paddingVertical: 14, fontSize: fontSize.base, color: colors.text },
-  hint: { fontSize: fontSize.xs, color: colors.muted },
-  error: { fontSize: fontSize.xs, fontWeight: weight.medium, color: colors.danger },
+  input: { flex: 1, paddingVertical: 14, fontSize: fontSize.base, fontFamily: font.regular, color: colors.text },
+  hint: { fontSize: fontSize.xs, fontFamily: font.regular, color: colors.muted },
+  error: { fontSize: fontSize.xs, fontFamily: font.medium, color: colors.danger },
 });
