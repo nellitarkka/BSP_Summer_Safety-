@@ -4,8 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// SecureStore-backed auth storage so sessions persist securely (FR-05, NFR-04).
-// Web falls back to localStorage (SecureStore is native-only).
+
 const ExpoSecureStoreAdapter = {
   getItem: (key: string) =>
     Platform.OS === 'web'
@@ -26,7 +25,6 @@ const supabaseUrl = extra.supabaseUrl as string | undefined;
 const supabaseAnonKey = extra.supabaseAnonKey as string | undefined;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  // Fail loud in dev so misconfiguration is obvious (maps ERR-05 surface).
   console.warn(
     '[supabase] Missing EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY. See .env.example.',
   );

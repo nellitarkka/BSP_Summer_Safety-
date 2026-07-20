@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-// Shared validation schemas (NFR-05). Used on the client; mirrored server-side
-// where applicable.
-
 export const signUpSchema = z
   .object({
     full_name: z.string().trim().min(1, 'Please enter your full name'),
