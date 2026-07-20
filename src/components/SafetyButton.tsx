@@ -1,7 +1,7 @@
 import { Pressable, Text, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { gradients, colors, radius, space, fontSize, weight } from '@/lib/theme';
+import { gradients, colors, radius, space, fontSize, font } from '@/lib/theme';
 
 type Variant = 'danger' | 'primary' | 'ok' | 'outline' | 'ghost';
 
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     paddingVertical: space[4],
   },
   inner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[2] },
-  label: { textAlign: 'center', fontWeight: weight.bold },
+  label: { textAlign: 'center', fontFamily: font.bold },
   outline: { borderWidth: 2, borderColor: colors.brand, backgroundColor: colors.white },
   ghost: { backgroundColor: 'transparent' },
 });

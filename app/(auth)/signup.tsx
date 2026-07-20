@@ -10,7 +10,7 @@ import { SafetyButton } from '@/components/SafetyButton';
 import { signUpSchema } from '@/lib/validation';
 import { authService } from '@/services/authService';
 import { SAFETY_DISCLAIMER } from '@/lib/constants';
-import { colors, radius, space, fontSize, weight } from '@/lib/theme';
+import { colors, radius, space, fontSize, font } from '@/lib/theme';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -76,7 +76,7 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   formCard: { gap: space[4] },
   disclaimerCard: { flexDirection: 'row', gap: space[3] },
-  disclaimerText: { flex: 1, fontSize: fontSize.xs, lineHeight: 20, color: colors.text },
+  disclaimerText: { flex: 1, fontSize: fontSize.xs, lineHeight: 20, fontFamily: font.regular, color: colors.text },
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -86,9 +86,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space[4],
     paddingVertical: space[3],
   },
-  checkboxLabel: { flex: 1, fontSize: fontSize.sm, fontWeight: weight.medium, color: colors.text },
-  errorText: { fontSize: fontSize.xs, fontWeight: weight.medium, color: colors.danger },
+  checkboxLabel: { flex: 1, fontSize: fontSize.sm, fontFamily: font.medium, color: colors.text },
+  errorText: { fontSize: fontSize.xs, fontFamily: font.medium, color: colors.danger },
   link: { paddingVertical: space[1] },
-  linkText: { fontWeight: weight.semibold, color: colors.brand },
-  mutedText: { textAlign: 'center', color: colors.muted },
+  linkText: { fontFamily: font.semibold, color: colors.brand },
+  mutedText: { textAlign: 'center', fontFamily: font.regular, color: colors.muted },
 });

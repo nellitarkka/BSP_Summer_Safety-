@@ -8,7 +8,7 @@ import { FormField } from '@/components/FormField';
 import { SafetyButton } from '@/components/SafetyButton';
 import { loginSchema } from '@/lib/validation';
 import { authService } from '@/services/authService';
-import { colors, space, weight } from '@/lib/theme';
+import { colors, space, font } from '@/lib/theme';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -64,6 +64,6 @@ const styles = StyleSheet.create({
   content: { justifyContent: 'center' },
   card: { gap: space[4] },
   link: { paddingVertical: space[1] },
-  linkText: { textAlign: 'center', fontWeight: weight.semibold, color: colors.brand },
-  mutedText: { textAlign: 'center', color: colors.muted },
+  linkText: { textAlign: 'center', fontFamily: font.semibold, color: colors.brand },
+  mutedText: { textAlign: 'center', fontFamily: font.regular, color: colors.muted },
 });

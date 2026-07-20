@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
-import { colors } from '@/lib/theme';
+import { colors, font } from '@/lib/theme';
 
 // Bottom-tab navigation for the main features (NFR-09). Secondary screens are
 // registered with href:null so they're navigable but hidden from the tab bar.
@@ -12,12 +12,12 @@ export default function AppLayout() {
         headerShown: true,
         headerStyle: { backgroundColor: colors.bg },
         headerShadowVisible: false,
-        headerTitleStyle: { color: colors.text, fontWeight: '800', fontSize: 20 },
+        headerTitleStyle: { color: colors.text, fontFamily: font.extrabold, fontSize: 20 },
         headerTitleAlign: 'left',
         sceneStyle: { backgroundColor: colors.bg },
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.muted,
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 12, fontFamily: font.semibold },
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.line,

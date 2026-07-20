@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafetyButton } from '@/components/SafetyButton';
 import { useActiveSession } from '@/hooks/useActiveSession';
-import { gradients, colors, space, radius, fontSize, weight } from '@/lib/theme';
+import { gradients, colors, space, radius, fontSize, font } from '@/lib/theme';
 
 // Tappable action tile for the quick-actions grid.
 function ActionTile({
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     borderRadius: radius['2xl'],
     backgroundColor: colors.brandSoft,
   },
-  tileLabel: { fontSize: fontSize.base, fontWeight: weight.bold, color: colors.text },
+  tileLabel: { fontSize: fontSize.base, fontFamily: font.bold, color: colors.text },
   hero: { gap: space[3], borderRadius: radius['4xl'], padding: space[6] },
   heroIcon: {
     width: 48,
@@ -120,11 +120,11 @@ const styles = StyleSheet.create({
     borderRadius: radius['2xl'],
     backgroundColor: 'rgba(255,255,255,0.15)',
   },
-  heroTitle: { fontSize: fontSize['2xl'], fontWeight: weight.extrabold, color: '#FFFFFF' },
-  heroSubtitle: { marginTop: space[1], fontSize: fontSize.base, color: 'rgba(255,255,255,0.85)' },
-  heroCta: { marginTop: space[2], fontWeight: weight.semibold, color: '#FFFFFF' },
-  heroBody: { fontSize: fontSize.base, color: 'rgba(255,255,255,0.85)' },
+  heroTitle: { fontSize: fontSize['2xl'], fontFamily: font.display, color: '#FFFFFF' },
+  heroSubtitle: { marginTop: space[1], fontSize: fontSize.base, fontFamily: font.regular, color: 'rgba(255,255,255,0.85)' },
+  heroCta: { marginTop: space[2], fontFamily: font.semibold, color: '#FFFFFF' },
+  heroBody: { fontSize: fontSize.base, fontFamily: font.regular, color: 'rgba(255,255,255,0.85)' },
   actionsRow: { flexDirection: 'row', gap: space[4] },
   emergency: { marginTop: space[2], gap: space[2] },
-  emergencyHint: { textAlign: 'center', fontSize: fontSize.xs, color: colors.muted },
+  emergencyHint: { textAlign: 'center', fontSize: fontSize.xs, fontFamily: font.regular, color: colors.muted },
 });

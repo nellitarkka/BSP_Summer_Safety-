@@ -14,6 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     'expo-secure-store',
+    'expo-font',
     ['expo-location', {
       locationWhenInUsePermission:
         'Safety Companion uses your location only to show your current position and plan routes during a safety session. Sharing is optional and off by default.',
