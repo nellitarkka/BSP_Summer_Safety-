@@ -1,18 +1,26 @@
 import type { Coords, IndicatorRating } from '@/types';
 import { haversineM } from '@/lib/geo';
 
+// Pure proximity indicators from the bundled Luxembourg open-data extract
+// (FR-58/59). Given a route and the datasets, decides — at ROUTE LEVEL — how
+// close the route stays to public transport and to help points. Relative and
+// uncertainty-aware; never a per-street danger score (NFR-14). No expo/network
+// deps, so it stays unit-testable.
+
+// Street lamps aggregated into a coarse grid (built by scripts/build-lux-features).
 export interface LightingGrid {
   latStep: number;
   lonStep: number;
-  cells: Record<string, number>; 
+  cells: Record<string, number>; // "latIdx,lonIdx" -> lamp count
 }
 
 export interface FeatureData {
-  transitStops: readonly (readonly [number, number])[]; 
-  helpPoints: readonly (readonly [number, number, string])[]; 
+  transitStops: readonly (readonly [number, number])[]; // [lat, lon]
+  helpPoints: readonly (readonly [number, number, string])[]; // [lat, lon, kind]
   lighting?: LightingGrid;
 }
 
+// Sample the route to at most `max` points to bound the O(points × dataset) cost.
 function sample(coords: Coords[], max = 40): Coords[] {
   if (coords.length <= max) return coords;
   const step = Math.ceil(coords.length / max);
@@ -30,6 +38,7 @@ function nearestM(lat: number, lon: number, pts: FeatureData['transitStops'] | F
   return min;
 }
 
+// Fraction of the route with mapped street lighting in the cell or its neighbours.
 function lightingRating(pts: Coords[], grid: LightingGrid | undefined): IndicatorRating {
   if (!grid || Object.keys(grid.cells).length === 0) return 'unknown';
   let lit = 0;
@@ -58,6 +67,8 @@ export function proximityRatings(coords: Coords[], data: FeatureData): Proximity
   if (coords.length === 0) return { transit: 'unknown', help: 'unknown', lighting: 'unknown' };
   const pts = sample(coords);
 
+  // Transit: median nearest-stop distance along the route ("does it generally
+  // stay near public transport"), so it discriminates rather than always maxing.
   let transit: IndicatorRating = 'unknown';
   if (data.transitStops.length > 0) {
     const dists = pts.map((c) => nearestM(c.latitude, c.longitude, data.transitStops)).sort((a, b) => a - b);
@@ -65,6 +76,7 @@ export function proximityRatings(coords: Coords[], data: FeatureData): Proximity
     transit = median < 150 ? 'higher' : median < 350 ? 'moderate' : 'lower';
   }
 
+  // Help points are sparse: does the route pass near any police/hospital/pharmacy.
   let help: IndicatorRating = 'unknown';
   if (data.helpPoints.length > 0) {
     let min = Infinity;

@@ -1,23 +1,31 @@
 import type { Coords } from '@/types';
 import { haversineM } from '@/lib/geo';
 
+// Pure ETA / route-deviation monitoring for an active safety session (approach
+// doc step 6). Deterministic — `now` is passed in, so it is unit-testable.
+//
+// This NEVER auto-triggers anything: it only reports whether the user seems
+// overdue or off their planned route, so the UI can gently ask "everything ok?".
+// Any alert stays confirmation-gated (FR-34/35). No location is persisted (NFR-07).
+
 export interface MonitorInput {
-  now: number; 
-  expectedArrivalMs: number | null; 
-  currentLocation: Coords | null; 
-  routeCoords: readonly Coords[]; 
-  overdueGraceMin?: number; 
-  offRouteThresholdM?: number; 
+  now: number; // Date.now()
+  expectedArrivalMs: number | null; // session.expected_arrival_time
+  currentLocation: Coords | null; // only when location sharing is on
+  routeCoords: readonly Coords[]; // planned route geometry
+  overdueGraceMin?: number; // minutes past ETA before flagging (default 10)
+  offRouteThresholdM?: number; // metres from route before flagging (default 150)
 }
 
 export interface MonitorStatus {
   overdue: boolean;
-  minutesOverdue: number; 
+  minutesOverdue: number; // 0 when not overdue
   offRoute: boolean;
-  deviationM: number | null; 
+  deviationM: number | null; // null when no location / no route
 }
 
-
+// Nearest distance from a point to the planned route (nearest vertex — route
+// vertices are densely spaced, so this is a good approximation).
 function distanceToRouteM(loc: Coords, route: readonly Coords[]): number | null {
   if (route.length === 0) return null;
   let min = Infinity;

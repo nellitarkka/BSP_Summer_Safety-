@@ -8,6 +8,8 @@ interface RouteMapProps {
   style?: MapViewProps['style'];
 }
 
+// Renders the walking route polyline with start/end markers (FR-16).
+// Routing logic stays in routeService — this component only displays.
 export function RouteMap({ coordinates, style }: RouteMapProps) {
   const mapRef = useRef<MapView>(null);
   const start = coordinates[0];

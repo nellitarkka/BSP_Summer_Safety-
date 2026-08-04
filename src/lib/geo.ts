@@ -1,7 +1,9 @@
+// Shared geospatial helpers.
 
-const EARTH_R = 6371000; 
+const EARTH_R = 6371000; // metres
 const toRad = (d: number): number => (d * Math.PI) / 180;
 
+// Great-circle distance between two lat/lon points, in metres.
 export function haversineM(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const dLat = toRad(bLat - aLat);
   const dLon = toRad(bLon - aLon);

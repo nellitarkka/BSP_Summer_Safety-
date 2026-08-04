@@ -2,19 +2,21 @@ import { proximityRatings, type FeatureData } from '@/lib/routeFeatures';
 import { buildResponseFromPaths, type GraphHopperPath } from '@/lib/routeDerivation';
 import type { Coords } from '@/types';
 
+// A short route around a point in Luxembourg City.
 const ROUTE: Coords[] = [
   { latitude: 49.6003, longitude: 6.1342 },
   { latitude: 49.6008, longitude: 6.135 },
   { latitude: 49.6012, longitude: 6.1358 },
 ];
 
-
+// @feature US-013 @priority should
+// FR-58/59/NFR-14: proximity indicators are route-level and relative.
 describe('route proximity indicators (FR-58/59)', () => {
   it('rates transit "higher" when a stop sits on the route', () => {
     const data: FeatureData = { transitStops: [[49.6008, 6.135]], helpPoints: [] };
     const { transit, help } = proximityRatings(ROUTE, data);
     expect(transit).toBe('higher');
-    expect(help).toBe('unknown'); 
+    expect(help).toBe('unknown'); // no help-point data provided
   });
 
   it('rates transit "lower" when the nearest stop is far away', () => {
@@ -31,7 +33,7 @@ describe('route proximity indicators (FR-58/59)', () => {
     const { transit, help, lighting } = proximityRatings(ROUTE, { transitStops: [], helpPoints: [] });
     expect(transit).toBe('unknown');
     expect(help).toBe('unknown');
-    expect(lighting).toBe('unknown'); 
+    expect(lighting).toBe('unknown'); // no lighting grid supplied
   });
 
   it('rates lighting from the street-lamp grid', () => {
@@ -42,7 +44,9 @@ describe('route proximity indicators (FR-58/59)', () => {
       helpPoints: [],
       lighting: { latStep: 0.002, lonStep: 0.003, cells: { [`${li},${lo}`]: 4 } },
     };
+    // Every sampled route point is in/next to the lit cell → higher.
     expect(proximityRatings(ROUTE, data).lighting).toBe('higher');
+    // A grid with lamps only far away → route has no lit cells nearby → lower.
     const far: FeatureData = {
       transitStops: [], helpPoints: [],
       lighting: { latStep: 0.002, lonStep: 0.003, cells: { '30000,4000': 9 } },
@@ -51,6 +55,7 @@ describe('route proximity indicators (FR-58/59)', () => {
   });
 });
 
+// The engine wires proximity into the response when data is supplied.
 describe('engine integrates proximity (FR-58/59)', () => {
   it('fills transit/help indicators from the dataset', () => {
     const paths: GraphHopperPath[] = [
@@ -67,6 +72,6 @@ describe('engine integrates proximity (FR-58/59)', () => {
     const res = buildResponseFromPaths(paths, 'night', '1970-01-01T00:00:00.000Z', data);
     expect(res.candidates[0]!.indicators.transit_proximity).toBe('higher');
     expect(res.candidates[0]!.indicators.help_point_proximity).toBe('higher');
-    expect(res.candidates[0]!.indicators.lighting_availability).toBe('unknown'); 
+    expect(res.candidates[0]!.indicators.lighting_availability).toBe('unknown'); // still no lighting data
   });
 });

@@ -7,17 +7,22 @@ import type {
 } from '@/types';
 import { proximityRatings, type FeatureData } from '@/lib/routeFeatures';
 
-
+// Pure derivation of route features + route-level indicators + comparison from
+// GraphHopper alternative-route paths (FR-58/59/60). Unit-testable, no network.
+// Openness comes from road types; transit/help-point proximity from the bundled
+// LU extract (via routeFeatures); lighting is still 'unknown'. Never a per-street
+// danger label or score (FR-59/NFR-14).
 
 export interface GraphHopperPath {
   distance: number; // meters
   time: number; // milliseconds
-  points: { coordinates: [number, number][] };
+  points: { coordinates: [number, number][] }; // [lon, lat]
   details?: { road_class?: [number, number, string][] };
 }
 
 export const ENGINE_VERSION = 'route-engine-graphhopper-0.2';
 
+// Road classes that indicate quiet, off-street paths (vs active streets).
 const ISOLATED_CLASSES = new Set(['path', 'track', 'bridleway']);
 
 function mapRoadClass(value: string): PathType {
@@ -46,7 +51,8 @@ function mapRoadClass(value: string): PathType {
   }
 }
 
-
+// Relative "openness" (how much a route stays on active streets vs quiet paths).
+// Positive framing, never a danger score.
 function opennessRating(rc: [number, number, string][] | undefined): IndicatorRating {
   if (!rc || rc.length === 0) return 'unknown';
   let total = 0;
@@ -83,6 +89,7 @@ function durMin(c: RouteCandidate): number {
   return Math.round(c.summary.duration_s / 60);
 }
 
+// Extra relative clauses for the preferred route — safe, positive wording (FR-67).
 function extraClauses(c: RouteCandidate): string {
   const bits: string[] = [];
   if (c.indicators.lighting_availability === 'higher') bits.push('has more street lighting');
@@ -91,7 +98,8 @@ function extraClauses(c: RouteCandidate): string {
   return bits.length > 0 ? `, and ${bits.join(' and ')}` : '';
 }
 
-
+// Plain-language, relative comparison (FR-60). Always mentions walking time so
+// it stays grounded in a real feature; never labels a street dangerous (FR-67).
 function explain(candidates: RouteCandidate[], preferred: RouteCandidate): string {
   const other = candidates.find((c) => c.id !== preferred.id);
   const parts = [
@@ -104,6 +112,7 @@ function explain(candidates: RouteCandidate[], preferred: RouteCandidate): strin
   return parts.join(' ');
 }
 
+// Combined relative score for choosing the preferred route. Never a danger score.
 function candidateScore(c: RouteCandidate): number {
   return (
     RANK[c.indicators.route_openness] +
@@ -162,6 +171,7 @@ export function buildResponseFromPaths(
 
   let comparison: RouteFeatureResponse['comparison'] = null;
   if (candidates.length > 1) {
+    // Prefer the route with the best combined indicators; tie-break shorter walk.
     const preferred = [...candidates].sort(
       (a, b) => candidateScore(b) - candidateScore(a) || a.summary.duration_s - b.summary.duration_s,
     )[0]!;
@@ -171,7 +181,10 @@ export function buildResponseFromPaths(
   return { candidates, comparison, generated_at: generatedAt, engine_version: ENGINE_VERSION };
 }
 
-
+// FR-68: build AGGREGATED/RELATIVE descriptors for the AI from candidates.
+// Derives only from route-level indicators — never emits coordinates, so precise
+// GPS cannot reach the AI through this path (extends FR-47). Pure (no expo deps)
+// so it stays unit-testable.
 export function buildRouteDescriptors(candidates: RouteCandidate[]): string[] {
   return candidates.map((c) => {
     const parts: string[] = [];
