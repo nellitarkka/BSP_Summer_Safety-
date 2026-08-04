@@ -11,9 +11,12 @@ interface Props {
   placeholder?: string;
   icon?: keyof typeof Ionicons.glyphMap;
   onChangeText: (text: string) => void;
+  // Fired when the user picks a suggestion — carries exact coordinates so we
+  // don't have to re-geocode an ambiguous string later.
   onSelect: (hit: AddressHit) => void;
 }
 
+// Debounced address search with a suggestions dropdown (like Google/Apple Maps).
 export function AddressAutocomplete({ label, value, placeholder, icon, onChangeText, onSelect }: Props) {
   const [hits, setHits] = useState<AddressHit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -21,6 +24,7 @@ export function AddressAutocomplete({ label, value, placeholder, icon, onChangeT
   const justSelected = useRef(false);
 
   useEffect(() => {
+    // Skip the query that immediately follows a selection (text was set by us).
     if (justSelected.current) {
       justSelected.current = false;
       return;

@@ -8,11 +8,12 @@ interface PlannerState {
   useCurrent: boolean;
   startText: string;
   destText: string;
-
+  // Exact coords chosen from an autocomplete suggestion (avoids re-geocoding an
+  // ambiguous string). Cleared when the user edits the text again.
   startPick: Coords | null;
   destPick: Coords | null;
   route: RouteSummary | null;
-
+  // Coords of the last computed route — used by the R2 route comparison (US-013).
   coords: { start: Coords; destination: Coords } | null;
   computing: boolean;
   error: string | null;
@@ -44,6 +45,7 @@ export function useRoutePlanner() {
   }, []);
 
   const setUseCurrent = useCallback((v: boolean) => patch({ useCurrent: v }), []);
+  // Editing the text invalidates a previously picked suggestion.
   const setStartText = useCallback((startText: string) => patch({ startText, startPick: null }), []);
   const setDestText = useCallback((destText: string) => patch({ destText, destPick: null }), []);
   const pickStart = useCallback((c: Coords) => patch({ startPick: c }), []);

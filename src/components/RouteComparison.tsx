@@ -8,7 +8,8 @@ import { indicatorRows, RATING_LABEL, RATING_TONE, type IndicatorTone } from '@/
 import { colors, radius, space, fontSize, font } from '@/lib/theme';
 import type { RouteCandidate, RouteFeatureResponse } from '@/types';
 
-
+// Indicator tones (ethical: 'lower' is never an alarm/red). higher → brand (dusk,
+// preferred), moderate → accent (lilac), lower/unknown → muted (neutral).
 const TONE_COLOR: Record<IndicatorTone, string> = {
   ok: colors.brand,
   neutral: colors.accent,
@@ -69,6 +70,9 @@ function CandidateCard({ c, selected, onPress }: { c: RouteCandidate; selected: 
   );
 }
 
+// R2 route comparison (US-013) + optional AI explanation (US-014). Presents
+// relative, route-level indicators and a plain-language comparison — never a
+// per-street danger label (FR-59/NFR-14).
 export function RouteComparison({ data, selectedId, onSelect, aiLoading, aiExplanation, onExplainWithAI }: Props) {
   const uncertainty = data.candidates[0]?.indicators.uncertainty_note;
 

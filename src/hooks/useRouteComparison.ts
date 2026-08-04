@@ -18,6 +18,7 @@ const INITIAL: ComparisonState = {
   selectedId: null, aiLoading: false, aiExplanation: null,
 };
 
+// Rough local time-of-day bucket for indicator context (no network, no GPS).
 function currentTimeOfDay(): TimeOfDay {
   const h = new Date().getHours();
   if (h >= 6 && h < 18) return 'day';
@@ -25,7 +26,8 @@ function currentTimeOfDay(): TimeOfDay {
   return 'night';
 }
 
-
+// Drives the R2 route comparison (US-013) + optional AI explanation (US-014).
+// Runs against routeEngineService (live GraphHopper candidate routing).
 export function useRouteComparison() {
   const [s, setS] = useState<ComparisonState>(INITIAL);
   const patch = (p: Partial<ComparisonState>) => setS((prev) => ({ ...prev, ...p }));
@@ -39,6 +41,7 @@ export function useRouteComparison() {
       const selectedId = data.comparison?.preferred_candidate_id ?? data.candidates[0]?.id ?? null;
       patch({ loading: false, data, selectedId });
     } catch {
+      // Degrade gracefully (ERR-10) — the MVP single-route flow still stands.
       patch({ loading: false, error: 'Route comparison is unavailable right now.' });
     }
   }, []);

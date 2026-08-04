@@ -10,6 +10,9 @@ const IND: RouteIndicators = {
   uncertainty_note: 'stub',
 };
 
+// @feature US-013 @priority should
+// FR-59/NFR-14: indicators are relative and route-level; presentation must not
+// imply a per-street danger scale (no alarm/red tone for "lower").
 describe('route indicator presentation (FR-59)', () => {
   it('exposes exactly the four route-level indicators in order', () => {
     const rows = indicatorRows(IND);
@@ -23,6 +26,7 @@ describe('route indicator presentation (FR-59)', () => {
 
   it('never maps any rating to a danger/alarm tone', () => {
     const tones = Object.values(RATING_TONE);
+    // Only positive/neutral/muted tones exist — no "danger" concept.
     for (const t of tones) expect(['ok', 'neutral', 'muted']).toContain(t);
   });
 
