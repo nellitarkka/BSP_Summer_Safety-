@@ -1,8 +1,14 @@
-
+// Shared AI provider call (Direct Provider pattern, NFR-04). The provider key
+// lives only in the AI_PROVIDER_KEY secret — never in the client.
+//
+// Provider: OpenAI Chat Completions. JSON mode (`response_format: json_object`)
+// forces well-formed JSON, so the caller can parse reliably. Swapping providers
+// means changing only this file.
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 const MODEL = 'gpt-4o-mini';
 
- so the caller falls back.
+// Call the provider with a system + user prompt. Returns the raw message content
+// (expected to be a JSON string). Throws on non-2xx so the caller falls back.
 export async function callAI(system: string, user: string, maxTokens: number): Promise<string> {
   const res = await fetch(OPENAI_URL, {
     method: 'POST',
@@ -26,6 +32,8 @@ export async function callAI(system: string, user: string, maxTokens: number): P
   return data?.choices?.[0]?.message?.content ?? '';
 }
 
+// Tolerant JSON extraction: even in JSON mode a stray fence/prose can appear, so
+// strip ```fences``` and grab the first {...} block before parsing.
 export function extractJson(text: string): Record<string, unknown> | null {
   if (!text) return null;
   let t = text.trim();
