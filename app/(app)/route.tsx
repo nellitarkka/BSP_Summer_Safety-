@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, Switch, Alert, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/ui/Screen';
@@ -12,11 +12,14 @@ import { RouteMap } from '@/components/RouteMap';
 import { RouteComparison } from '@/components/RouteComparison';
 import { ContactPicker } from '@/components/ContactPicker';
 import { useRoutePlanner } from '@/hooks/useRoutePlanner';
+import { routeRequestKey } from '@/lib/routeRequest';
 import { useRouteComparison } from '@/hooks/useRouteComparison';
 import { useContacts } from '@/hooks/useContacts';
-import { sessionService } from '@/services/sessionService';
+import { useCreateSession } from '@/hooks/useActiveSession';
+import { ActiveSessionError } from '@/services/sessionService';
 import { notificationService } from '@/services/notificationService';
 import { formatDistance, formatDuration } from '@/services/routeService';
+import { ROUTE_COPY } from '@/lib/routePresentation';
 import { CHECKIN_INTERVALS } from '@/lib/constants';
 import { colors, space, fontSize, font } from '@/lib/theme';
 
@@ -25,6 +28,7 @@ export default function RouteScreen() {
   const { state, requestLocation, setUseCurrent, setStartText, setDestText, pickStart, pickDest, compute } = useRoutePlanner();
   const comparison = useRouteComparison();
   const { data: contacts } = useContacts();
+  const createSession = useCreateSession();
   const [interval, setInterval] = useState<number>(30);
   const [selected, setSelected] = useState<string[]>([]);
   const [sharing, setSharing] = useState(false);
@@ -33,11 +37,22 @@ export default function RouteScreen() {
   const toggle = (id: string) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
+  // Changing origin/destination clears the planner's route/coords; whenever that route
+  // request identity changes, discard the previous comparison so no stale candidates,
+  // selection, recommendation/tie state or AI explanation linger (Bug 1).
+  const requestKey = routeRequestKey(state.coords);
+  const { reset: resetComparison } = comparison;
+  useEffect(() => {
+    resetComparison();
+  }, [requestKey, resetComparison]);
+
   async function startSession() {
     if (!state.route) return;
     setStarting(true);
     try {
-      await sessionService.create({
+      // Create via the mutation so the active-session cache is primed on success — the
+      // Session screen then shows the new session immediately (round-2 fix, Bug 2).
+      await createSession.mutateAsync({
         start_location: state.useCurrent ? 'Current location' : state.startText,
         destination: state.destText,
         route_data: state.route,
@@ -49,6 +64,21 @@ export default function RouteScreen() {
         await notificationService.scheduleCheckIn(interval);
       }
       router.replace('/(app)/session');
+    } catch (e) {
+      // At most one active session per user (DB constraint). Don't surface a raw DB
+      // error — offer to resume the existing session instead of destroying it (Bug 2).
+      if (e instanceof ActiveSessionError) {
+        Alert.alert(
+          'Active session in progress',
+          'You already have a safety session running. You can go to it, or end it before starting a new one.',
+          [
+            { text: 'Not now', style: 'cancel' },
+            { text: 'Go to session', onPress: () => router.replace('/(app)/session') },
+          ],
+        );
+      } else {
+        Alert.alert("Couldn't start session", 'Please check your connection and try again.');
+      }
     } finally {
       setStarting(false);
     }
@@ -88,7 +118,7 @@ export default function RouteScreen() {
             </View>
             {state.coords && !comparison.state.data ? (
               <SafetyButton
-                label={comparison.state.loading ? 'Comparing…' : 'Compare safer routes'}
+                label={comparison.state.loading ? ROUTE_COPY.comparing : ROUTE_COPY.compareButton}
                 variant="outline"
                 icon="git-compare-outline"
                 loading={comparison.state.loading}
@@ -104,9 +134,11 @@ export default function RouteScreen() {
             <RouteComparison
               data={comparison.state.data}
               selectedId={comparison.state.selectedId}
+              selectionSource={comparison.state.selectionSource}
               onSelect={comparison.select}
               aiLoading={comparison.state.aiLoading}
               aiExplanation={comparison.state.aiExplanation}
+              aiSource={comparison.state.aiSource}
               onExplainWithAI={comparison.explainWithAI}
             />
           ) : null}
