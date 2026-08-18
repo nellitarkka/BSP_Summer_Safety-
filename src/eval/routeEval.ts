@@ -1,5 +1,6 @@
-import { violatesRouteGuardrails } from '@/lib/aiGuardrails';
-import { buildRouteDescriptors } from '@/lib/routeDerivation';
+import { violatesRouteGuardrails, containsCoordinateLike } from '@/lib/aiGuardrails';
+import { buildRoutePayload } from '@/lib/routeDerivation';
+import { evaluateAiFaithfulness, type FaithfulnessResult } from '@/eval/aiFaithfulness';
 import type { RouteFeatureResponse } from '@/types';
 import type { EvalScenario } from './scenarios';
 
@@ -16,14 +17,13 @@ export interface ScenarioResult {
   explainabilityPass: boolean;
   guardrailPass: boolean; // BLOCKING (FR-67 / NFR-14)
   gpsLeakPass: boolean; // BLOCKING (FR-68)
+  faithfulness: FaithfulnessResult | null; // null when no AI explanation was supplied (Gap 13)
   issues: string[];
 }
 
 // Plain-language explanations should reference an actual route feature concept,
 // so they are traceable to the extracted features (FR-60).
 const FEATURE_WORDS = /lighting|lit|transit|public transport|open|active|help|isolated|quieter|walk/i;
-// A coordinate-like decimal would indicate precise GPS leaking into AI input.
-const GPS_LIKE = /\d+\.\d{3,}/;
 
 export function evaluateScenario(
   scenario: EvalScenario,
@@ -55,14 +55,21 @@ export function evaluateScenario(
   if (!explainabilityPass) issues.push('explanation missing or not grounded in a route feature');
 
   // --- Guardrail (BLOCKING): no street-danger labels anywhere (FR-67) --------
-  const descriptors = buildRouteDescriptors(response.candidates);
-  const texts = [explanation, ...descriptors, aiExplanation ?? ''];
+  const texts = [explanation, aiExplanation ?? ''];
   const guardrailPass = texts.every((t) => !violatesRouteGuardrails(t));
   if (!guardrailPass) issues.push('street-danger label or safety guarantee detected (FR-67)');
 
-  // --- GPS exclusion (BLOCKING): AI descriptors carry no coordinates (FR-68) --
-  const gpsLeakPass = descriptors.every((d) => !GPS_LIKE.test(d));
-  if (!gpsLeakPass) issues.push('coordinate-like value found in AI descriptors (FR-68)');
+  // --- GPS exclusion (BLOCKING): the AI payload carries no coordinates (FR-68) ---
+  // The structured payload replaces the old prose descriptors; serialise it and check
+  // the whole thing (including labels and numeric values) for coordinate-like decimals.
+  const payload = buildRoutePayload(response);
+  const payloadJson = JSON.stringify(payload);
+  const gpsLeakPass = !containsCoordinateLike(payloadJson);
+  if (!gpsLeakPass) issues.push('coordinate-like value found in AI payload (FR-68)');
+
+  // --- AI faithfulness (Gap 13): only when an AI explanation is supplied ------
+  const faithfulness = aiExplanation ? evaluateAiFaithfulness(payload, aiExplanation) : null;
+  if (faithfulness && !faithfulness.faithful) issues.push(...faithfulness.issues);
 
   return {
     id: scenario.id,
@@ -72,6 +79,7 @@ export function evaluateScenario(
     explainabilityPass,
     guardrailPass,
     gpsLeakPass,
+    faithfulness,
     issues,
   };
 }
