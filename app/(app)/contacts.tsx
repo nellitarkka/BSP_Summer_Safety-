@@ -30,7 +30,9 @@ export default function ContactsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <View style={styles.container}>
-        <SafetyButton label="Add contact" variant="primary" icon="person-add" onPress={() => router.push('/(app)/contact-edit')} />
+        {/* Add is its own route (no id param) so it never inherits a previously edited
+            contact — the reused-Tabs-screen root cause of Bug 3. */}
+        <SafetyButton label="Add contact" variant="primary" icon="person-add" onPress={() => router.push('/(app)/contact-new')} />
         {isError ? (
           <Pressable onPress={() => refetch()}>
             <Text style={styles.retry}>Couldn&apos;t load contacts. Tap to retry.</Text>

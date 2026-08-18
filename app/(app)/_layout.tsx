@@ -57,10 +57,13 @@ export default function AppLayout() {
       />
       <Tabs.Screen name="session" options={{ href: null, title: 'Active session' }} />
       <Tabs.Screen name="unsafe" options={{ href: null, title: 'Safety actions' }} />
-      <Tabs.Screen name="fake-call" options={{ href: null, headerShown: false }} />
+      {/* Fake Call is full-screen for realism: hide the header AND the bottom tab bar
+          so no app chrome shows during the simulated call (Bug 4, UX). */}
+      <Tabs.Screen name="fake-call" options={{ href: null, headerShown: false, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="ai-tips" options={{ href: null, title: 'AI safety tips' }} />
       <Tabs.Screen name="profile" options={{ href: null, title: 'Profile' }} />
-      <Tabs.Screen name="contact-edit" options={{ href: null, title: 'Contact' }} />
+      <Tabs.Screen name="contact-edit" options={{ href: null, title: 'Edit contact' }} />
+      <Tabs.Screen name="contact-new" options={{ href: null, title: 'Add contact' }} />
       <Tabs.Screen name="privacy-notice" options={{ href: null, title: 'Privacy' }} />
       <Tabs.Screen name="data-sources" options={{ href: null, title: 'Data sources' }} />
     </Tabs>
