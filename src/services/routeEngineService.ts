@@ -1,14 +1,15 @@
 import Constants from 'expo-constants';
 import { buildResponseFromPaths, type GraphHopperPath } from '@/lib/routeDerivation';
 import type { FeatureData, LightingGrid } from '@/lib/routeFeatures';
+import { offsetVia, pickDetourCandidates } from '@/lib/routeCandidates';
 import transitStopsJson from '@/data/lux/transitStops.json';
 import helpPointsJson from '@/data/lux/helpPoints.json';
 import lightingJson from '@/data/lux/lighting.json';
 import type { Coords, RouteFeatureRequest, RouteFeatureResponse } from '@/types';
 
-// buildRouteDescriptors lives in routeDerivation (pure, testable). Re-exported
-// here for existing app imports.
-export { ENGINE_VERSION, buildRouteDescriptors } from '@/lib/routeDerivation';
+// buildRoutePayload lives in routeDerivation (pure, testable). Re-exported here for
+// existing app imports.
+export { ENGINE_VERSION, buildRoutePayload } from '@/lib/routeDerivation';
 
 // Bundled Luxembourg open-data extract (preprocessed by scripts/build-lux-features.mjs).
 const FEATURE_DATA: FeatureData = {
@@ -72,46 +73,26 @@ async function fetchAlternatives(req: RouteFeatureRequest, key: string): Promise
   if (!res.ok) return null; // free plan / not supported → caller uses the detour fallback
   const json = (await res.json()) as { paths?: GraphHopperPath[] };
   const paths = json.paths ?? [];
-  return paths.length > 1 ? paths.slice(0, 3) : null;
-}
-
-// A via-point offset perpendicular to the start→dest line at its midpoint, used to
-// synthesise a distinct candidate route on the free plan.
-function offsetVia(start: Coords, destination: Coords, meters: number): Coords {
-  const midLat = (start.latitude + destination.latitude) / 2;
-  const midLng = (start.longitude + destination.longitude) / 2;
-  const latRad = (midLat * Math.PI) / 180;
-  // Direction start→dest in metres.
-  const dx = (destination.longitude - start.longitude) * 111320 * Math.cos(latRad);
-  const dy = (destination.latitude - start.latitude) * 111320;
-  const len = Math.hypot(dx, dy) || 1;
-  // Perpendicular unit vector.
-  const px = -dy / len;
-  const py = dx / len;
-  return {
-    latitude: midLat + (py * meters) / 111320,
-    longitude: midLng + (px * meters) / (111320 * Math.cos(latRad)),
-  };
+  // Tag every native alternative with its generation method (Gap 7).
+  const tagged = paths.slice(0, 3).map((p) => ({ ...p, generation_method: 'graphhopper_alternative' as const }));
+  return tagged.length > 1 ? tagged : null;
 }
 
 // Free-plan fallback: the direct route plus up to two detours via offset waypoints.
-// Near-identical routes (within 3% distance) are dropped so candidates are genuinely
-// different to compare.
+// The plausibility + geometric-overlap selection is delegated to routeCandidates
+// (pure, unit-tested); this function only performs the network fetches.
 async function fetchDetourCandidates(req: RouteFeatureRequest, key: string): Promise<GraphHopperPath[]> {
   const direct = await fetchPath(req.start, req.destination, key);
   if (!direct) return [];
-  const kept: GraphHopperPath[] = [direct];
 
   const offsets = [450, -450]; // metres, left then right of the direct line
+  const alts: GraphHopperPath[] = [];
   for (const off of offsets) {
-    if (kept.length >= 3) break;
     const via = offsetVia(req.start, req.destination, off);
     const alt = await fetchPath(req.start, req.destination, key, via).catch(() => null);
-    if (!alt) continue;
-    const distinct = kept.every((k) => Math.abs(alt.distance - k.distance) / k.distance > 0.03);
-    if (distinct) kept.push(alt);
+    if (alt) alts.push(alt);
   }
-  return kept;
+  return pickDetourCandidates(direct, alts);
 }
 
 // R2 route & data engine (FR-57/58/59/60/61). Produces 1–3 real candidate walking

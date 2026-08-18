@@ -14,9 +14,13 @@ export const DATASET_SOURCES: DatasetSource[] = [
     source_url: 'https://download.geofabrik.de/europe/luxembourg.html',
     license: 'Open Database License (ODbL) 1.0 — © OpenStreetMap contributors',
     limitations:
-      'Community-maintained; coverage and tag completeness vary. Lighting (lit=*) ' +
-      'and some POIs are unmapped in places — such features are reported as ' +
-      '"not enough data" rather than guessed.',
+      'Community-maintained; coverage and tag completeness vary. The lighting ' +
+      'indicator is derived from street-lamp NODES only (highway=street_lamp / node ' +
+      'lit=yes), aggregated into a coarse ~220 m grid and matched to a route point if ' +
+      'a lamp falls in the cell or its 3x3 neighbourhood (~a couple hundred metres). ' +
+      'Way-level lit=* on highways is NOT extracted, so lighting is a lamp-node ' +
+      'density proxy, not a street-lighting measure. Unmapped features are reported as ' +
+      '"not enough data" rather than guessed (see TECHNICAL_DECISIONS.md §4).',
     role: 'base_map',
     background_only: false,
   },
