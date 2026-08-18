@@ -53,6 +53,12 @@ describe('route evaluation over sample night-out scenarios (FR-69)', () => {
             help_point_proximity: 'unknown' as const, route_openness: 'unknown' as const,
             time_of_day: 'night' as const, uncertainty_note: 'x',
           },
+          metrics: {
+            distance_m: 900, duration_s: 700, transit_median_distance_m: null,
+            help_point_min_distance_m: null, lit_fraction: null, active_span_share: null,
+          },
+          generation_method: 'direct' as const,
+          score: null,
         },
       ],
       comparison: { preferred_candidate_id: 'A', explanation: 'Route A avoids this dangerous street.' },
