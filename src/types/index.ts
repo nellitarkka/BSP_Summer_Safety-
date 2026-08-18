@@ -146,6 +146,24 @@ export interface HelpPointRef {
   distance_m: number;
 }
 
+// Raw numeric metrics behind every category (TECHNICAL_DECISIONS.md §1). These are
+// the single source of truth for the numbers the UI, the AI payload and the
+// evaluation show. Unavailable data is `null`, NEVER `0` — `0` is a real measured
+// value (e.g. a transit stop on the route) while `null` means the dataset could not
+// answer. The paired category in RouteIndicators is `'unknown'` iff the value is null.
+export interface RouteMetrics {
+  distance_m: number; // always available (from the router)
+  duration_s: number; // always available (from the router)
+  transit_median_distance_m: number | null; // median nearest-stop distance along the route
+  help_point_min_distance_m: number | null; // minimum nearest-help-point distance along the route
+  lit_fraction: number | null; // 0..1 fraction of sampled points near a mapped-lamp cell
+  active_span_share: number | null; // 0..1 share of route length on active (non-isolated) road classes
+}
+
+// How a candidate route was produced (FR-57, Gap 7). Reported so native and
+// synthesised alternatives can be evaluated separately.
+export type RouteGenerationMethod = 'direct' | 'graphhopper_alternative' | 'waypoint_detour';
+
 // Extracted per-candidate route features (FR-58). Fields are nullable/unknown
 // where the underlying OSM data is unmapped — never fabricated.
 export interface RouteFeatures {
@@ -178,6 +196,9 @@ export interface RouteCandidate {
   summary: RouteSummary; // geometry + distance/duration/provider (reused MVP type)
   features: RouteFeatures;
   indicators: RouteIndicators;
+  metrics: RouteMetrics; // raw numbers behind the indicators (TECHNICAL_DECISIONS.md §1)
+  generation_method: RouteGenerationMethod; // how this candidate was produced (Gap 7)
+  score: number | null; // ranking score in [0,1] over available indicators; null = insufficient data (§2)
 }
 
 // Comparison + plain-language explanation (FR-60). Relative wording only.
@@ -207,17 +228,58 @@ export interface RouteFeatureResponse {
   engine_version: string;
 }
 
-// Route-feature AI (FR-66..68). Input is AGGREGATED/RELATIVE descriptors only —
-// there is deliberately no coordinates field, so precise GPS cannot be sent
-// unless a consented descriptor is built upstream (FR-68, extends FR-47).
+// Route-feature AI (FR-66..68). Input is a STRUCTURED, COORDINATE-FREE payload
+// (TECHNICAL_DECISIONS.md §1, Gap 8) — there is deliberately no coordinates field,
+// no place name and no address, so precise GPS cannot reach the model (FR-68).
+// Each indicator carries BOTH its category and its numeric value so the model can
+// quantify a trade-off; `value: null` with `category: 'unknown'` marks missing data
+// and is distinguishable from a measured `moderate` (extends FR-47).
+export interface RouteExplanationIndicator {
+  category: IndicatorRating;
+  value: number | null; // metres for transit/help; 0..1 fraction for lighting/openness; null = no data
+}
+
+export interface RouteExplanationCandidate {
+  id: string;
+  label: string;
+  distance_m: number;
+  duration_s: number;
+  extra_walking_min_vs_fastest: number; // 0 for the fastest candidate
+  indicators: {
+    lighting_availability: RouteExplanationIndicator;
+    transit_proximity: RouteExplanationIndicator;
+    help_point_proximity: RouteExplanationIndicator;
+    route_openness: RouteExplanationIndicator;
+  };
+}
+
 export interface RouteExplanationRequest {
-  candidate_descriptors: string[]; // e.g. 'Route A: well-lit main road, close to a transit stop'
+  candidates: RouteExplanationCandidate[];
+  preferred_candidate_id: string | null; // deterministic preference, or null on tie/insufficient evidence
+  tie: boolean; // true when the engine could not separate the candidates
   time_of_day?: TimeOfDay;
 }
+
+// Small closed vocabulary for why a fallback occurred (TECHNICAL_DECISIONS.md §10).
+// Shared by the Edge Function, the client and the tests. `provider_error` (no model
+// reached) is deliberately distinct from `guardrail_blocked` (model output rejected).
+export type FallbackReason =
+  | 'unauthorized'
+  | 'rate_limited'
+  | 'bad_request'
+  | 'provider_error'
+  | 'parse_error'
+  | 'guardrail_blocked'
+  | 'client_error';
 
 export interface RouteExplanationResponse {
   explanation: string; // why a route may be preferable (FR-66)
   emergency_reminder: string;
+  // Provenance (Gap 10). `source` drives the UI label; fallback text can NEVER be
+  // shown as live AI because the label reads this field, not the text.
+  source: 'ai' | 'fallback';
+  fallback_reason: FallbackReason | null; // null iff source === 'ai'
+  prompt_version: string | null; // e.g. 'route-explanation-system-v2' when source === 'ai'
   complete: boolean; // LAST field — truncation detection
 }
 
