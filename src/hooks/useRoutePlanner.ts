@@ -27,6 +27,12 @@ const MESSAGES: Record<string, string> = {
   LOCATION_DENIED: 'Location is off. Enter your start manually.',
 };
 
+// Changing the origin or destination invalidates any previously computed route, so the
+// derived geometry must be cleared (the user has to re-run "Get route"). See route.tsx,
+// which also resets the route comparison when the request identity changes (Bug 1).
+// The pure request-identity helper lives in @/lib/routeRequest (routeRequestKey).
+const INVALIDATE_ROUTE = { route: null, coords: null, error: null } as const;
+
 export function useRoutePlanner() {
   const [s, setS] = useState<PlannerState>({
     granted: null, useCurrent: false, startText: '', destText: '',
@@ -44,12 +50,14 @@ export function useRoutePlanner() {
     patch({ granted, useCurrent: granted });
   }, []);
 
-  const setUseCurrent = useCallback((v: boolean) => patch({ useCurrent: v }), []);
-  // Editing the text invalidates a previously picked suggestion.
-  const setStartText = useCallback((startText: string) => patch({ startText, startPick: null }), []);
-  const setDestText = useCallback((destText: string) => patch({ destText, destPick: null }), []);
-  const pickStart = useCallback((c: Coords) => patch({ startPick: c }), []);
-  const pickDest = useCallback((c: Coords) => patch({ destPick: c }), []);
+  // Any change to the origin/destination invalidates the previously computed route
+  // (route + coords cleared), so stale geometry/candidates never linger (Bug 1).
+  const setUseCurrent = useCallback((v: boolean) => patch({ useCurrent: v, ...INVALIDATE_ROUTE }), []);
+  // Editing the text also invalidates a previously picked suggestion.
+  const setStartText = useCallback((startText: string) => patch({ startText, startPick: null, ...INVALIDATE_ROUTE }), []);
+  const setDestText = useCallback((destText: string) => patch({ destText, destPick: null, ...INVALIDATE_ROUTE }), []);
+  const pickStart = useCallback((c: Coords) => patch({ startPick: c, ...INVALIDATE_ROUTE }), []);
+  const pickDest = useCallback((c: Coords) => patch({ destPick: c, ...INVALIDATE_ROUTE }), []);
 
   const compute = useCallback(async () => {
     setS((prev) => ({ ...prev, computing: true, error: null }));

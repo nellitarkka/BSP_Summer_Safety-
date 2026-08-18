@@ -1,21 +1,30 @@
 import { useCallback, useState } from 'react';
 import { routeEngineService } from '@/services/routeEngineService';
-import { buildRouteDescriptors } from '@/lib/routeDerivation';
+import { buildRoutePayload } from '@/lib/routeDerivation';
 import { aiService } from '@/services/aiService';
-import type { Coords, RouteFeatureResponse, TimeOfDay } from '@/types';
+import type { Coords, FallbackReason, RouteFeatureResponse, TimeOfDay } from '@/types';
+
+// How the currently-selected route was chosen: a system recommendation vs a manual
+// user pick. Kept distinct so the UI never presents a manual pick as a system
+// preference (TECHNICAL_DECISIONS.md §8/§11, Bianca C4).
+export type SelectionSource = 'system' | 'user' | null;
 
 interface ComparisonState {
   loading: boolean;
   data: RouteFeatureResponse | null;
   error: string | null;
   selectedId: string | null;
+  selectionSource: SelectionSource;
   aiLoading: boolean;
   aiExplanation: string | null;
+  aiSource: 'ai' | 'fallback' | null; // drives the UI source label (C5)
+  aiFallbackReason: FallbackReason | null;
 }
 
 const INITIAL: ComparisonState = {
   loading: false, data: null, error: null,
-  selectedId: null, aiLoading: false, aiExplanation: null,
+  selectedId: null, selectionSource: null,
+  aiLoading: false, aiExplanation: null, aiSource: null, aiFallbackReason: null,
 };
 
 // Rough local time-of-day bucket for indicator context (no network, no GPS).
@@ -38,29 +47,36 @@ export function useRouteComparison() {
       const data = await routeEngineService.getRouteFeatures({
         start, destination, time_of_day: currentTimeOfDay(),
       });
-      const selectedId = data.comparison?.preferred_candidate_id ?? data.candidates[0]?.id ?? null;
-      patch({ loading: false, data, selectedId });
+      // Only auto-select when the engine actually expressed a preference. On a tie /
+      // insufficient evidence preferred_candidate_id is null and NOTHING is selected —
+      // the old `?? data.candidates[0]` silent default is deliberately gone (B5).
+      const preferred = data.comparison?.preferred_candidate_id ?? null;
+      patch({
+        loading: false,
+        data,
+        selectedId: preferred,
+        selectionSource: preferred ? 'system' : null,
+      });
     } catch {
       // Degrade gracefully (ERR-10) — the MVP single-route flow still stands.
       patch({ loading: false, error: 'Route comparison is unavailable right now.' });
     }
   }, []);
 
-  const select = useCallback((id: string) => patch({ selectedId: id }), []);
+  // A manual user pick — recorded as 'user', never presented as a system preference.
+  const select = useCallback((id: string) => patch({ selectedId: id, selectionSource: 'user' }), []);
 
   const explainWithAI = useCallback(async () => {
-    setS((prev) => {
-      if (!prev.data) return prev;
-      return { ...prev, aiLoading: true };
-    });
+    setS((prev) => (prev.data ? { ...prev, aiLoading: true } : prev));
     const data = s.data;
     if (!data) return;
-    const descriptors = buildRouteDescriptors(data.candidates);
-    const res = await aiService.explainRoute({
-      candidate_descriptors: descriptors,
-      time_of_day: currentTimeOfDay(),
+    const res = await aiService.explainRoute(buildRoutePayload(data, currentTimeOfDay()));
+    patch({
+      aiLoading: false,
+      aiExplanation: res.explanation,
+      aiSource: res.source,
+      aiFallbackReason: res.fallback_reason,
     });
-    patch({ aiLoading: false, aiExplanation: res.explanation });
   }, [s.data]);
 
   const reset = useCallback(() => setS(INITIAL), []);
