@@ -1,5 +1,5 @@
-import { buildResponseFromPaths, buildRouteDescriptors, type GraphHopperPath } from '@/lib/routeDerivation';
-import { violatesRouteGuardrails } from '@/lib/aiGuardrails';
+import { buildResponseFromPaths, buildRoutePayload, type GraphHopperPath } from '@/lib/routeDerivation';
+import { violatesRouteGuardrails, containsCoordinateLike } from '@/lib/aiGuardrails';
 
 // Fixture GraphHopper alternative-route paths (offline — no network).
 const PATHS: GraphHopperPath[] = [
@@ -54,15 +54,30 @@ describe('route engine derivation (FR-57/58/59/60)', () => {
 });
 
 // @feature US-014 @priority must
-// FR-68: descriptors are aggregated/relative and carry no precise GPS.
-describe('route descriptor builder (FR-68)', () => {
-  it('emits one relative descriptor per candidate with no coordinates', () => {
-    const descriptors = buildRouteDescriptors(build().candidates);
-    expect(descriptors).toHaveLength(2);
-    for (const d of descriptors) {
-      expect(d).not.toMatch(/\d+\.\d{3,}/); // no lat/long-looking decimals
-      expect(violatesRouteGuardrails(d)).toBe(false);
+// FR-68 / Gap 8: the AI payload is structured, coordinate-free, and carries the
+// numbers + categories (replaces the old lossy prose descriptors).
+describe('structured AI payload (FR-68 / Gap 8)', () => {
+  it('emits one structured candidate per route with no coordinates or place names', () => {
+    const payload = buildRoutePayload(build());
+    expect(payload.candidates).toHaveLength(2);
+    // The whole serialised payload must contain no coordinate-like decimal (FR-68).
+    expect(containsCoordinateLike(JSON.stringify(payload))).toBe(false);
+    for (const c of payload.candidates) {
+      expect(typeof c.distance_m).toBe('number');
+      expect(typeof c.duration_s).toBe('number');
+      // Each indicator carries a category and a value (number or null), so 'moderate'
+      // is distinguishable from 'unknown'.
+      expect(c.indicators.route_openness).toHaveProperty('category');
+      expect(c.indicators.route_openness).toHaveProperty('value');
+      expect(violatesRouteGuardrails(JSON.stringify(c))).toBe(false);
     }
+  });
+
+  it('carries the deterministic preference/tie state to the AI', () => {
+    const payload = buildRoutePayload(build());
+    // With only openness available (no dataset), the engine cannot separate them.
+    expect(payload.tie).toBe(true);
+    expect(payload.preferred_candidate_id).toBeNull();
   });
 });
 
