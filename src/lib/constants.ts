@@ -10,6 +10,13 @@ export const AI_FALLBACK_TIP =
   "Couldn't generate tips right now. If you're in immediate danger, call local " +
   'emergency services. Move toward a public, well-lit area and contact a trusted person.';
 
+// Static route-explanation fallback (Gap 10). Shared by the client and the Edge
+// Function so both fallback bodies are identical and always labelled source:'fallback'.
+export const ROUTE_FALLBACK_TEXT =
+  'Compare the routes using the details shown — lighting, how close each stays to ' +
+  'public transport, and how open and active the streets are. Choose the one you ' +
+  'feel most comfortable with.';
+
 export const PRIVACY_NOTICE = [
   'We collect only what the app needs to help you stay safe: your profile, your ',
   'trusted contacts, and your safety sessions and check-ins.',

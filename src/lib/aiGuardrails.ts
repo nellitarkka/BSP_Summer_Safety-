@@ -20,3 +20,12 @@ const FORBIDDEN_ROUTE =
 export function violatesRouteGuardrails(text: string): boolean {
   return FORBIDDEN.test(text) || FORBIDDEN_ROUTE.test(text);
 }
+
+// FR-68 GPS-leak guard. A coordinate-like decimal (3+ fractional digits) in any
+// AI-bound text/payload indicates precise location leaking to the model. Centralised
+// so the eval, the tests and any future AI path share one definition.
+const COORDINATE_LIKE = /\d+\.\d{3,}/;
+
+export function containsCoordinateLike(text: string): boolean {
+  return COORDINATE_LIKE.test(text);
+}
